@@ -346,3 +346,29 @@ app.get('/api/dashboard-data', isAuthenticated, async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal memuat data' });
     }
 });
+
+// ==================== USER MANAGEMENT ROUTES (KHUSUS ADMIN) ====================
+
+app.post('/users/create', isAuthenticated, isAdmin, async (req, res) => {
+    const { nama, email, password, departemen, role } = req.body;
+    try {
+        // Cek apakah email sudah terdaftar
+        const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            return res.status(400).send('Gagal: Email sudah terdaftar di sistem.');
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const userRole = role === 'admin' ? 'admin' : 'user';
+
+        await db.query(
+            'INSERT INTO users (nama, email, password, departemen, role) VALUES (?, ?, ?, ?, ?)',
+            [nama, email, hashedPassword, departemen, userRole]
+        );
+
+        res.redirect('/dashboard');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Terjadi kesalahan saat membuat akun user baru.');
+    }
+});
