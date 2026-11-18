@@ -1,0 +1,13 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/dashboard">IT Portal & Asset</a>
+        <div class="d-flex align-items-center text-white">
+            <% if (user) { %>
+                <span class="me-3 small">
+                    Halo, <strong><%= user.nama %></strong> (<%= user.departemen %> - <%= user.role.toUpperCase() %>)
+                </span>
+                <a href="/logout" class="btn btn-sm btn-outline-light">Logout</a>
+            <% } %>
+        </div>
+    </div>
+</nav>

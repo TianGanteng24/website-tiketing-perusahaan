@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - IT Portal & Asset Management</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        .navbar-brand { letter-spacing: -0.5px; }
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.2s ease-in-out;
+        }
+        .kpi-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 240px;
+            width: 100%;
+        }
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            background-color: #f1f5f9 !important;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .table td {
+            vertical-align: middle;
+            color: #475569;
+            font-size: 0.875rem;
+        }
+        .badge {
+            font-weight: 500;
+            padding: 0.35em 0.65em;
+            letter-spacing: 0.02em;
+        }
+        .btn {
+            font-weight: 500;
+            border-radius: 8px;
+        }
+        .pagination .page-link {
+            border-radius: 6px;
+            margin: 0 2px;
+            font-size: 0.82rem;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+        }
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- NAVBAR MODERN -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/dashboard">
+                <i class="bi bi-cpu-fill text-primary"></i> IT Support & Asset
+            </a>
+            <div class="d-flex align-items-center text-light gap-3">
+                <% if (user) { %>
+                    <div class="d-none d-md-block text-end">
+                        <div class="fw-semibold small lh-1"><%= user.nama %></div>
+                        <span class="text-muted" style="font-size: 0.75rem;"><%= user.departemen %> &bull; <span class="text-uppercase text-info"><%= user.role %></span></span>
+                    </div>
+                    <a href="/logout" class="btn btn-outline-light btn-sm px-3 d-flex align-items-center gap-1">
+                        <i class="bi bi-box-arrow-right"></i> Keluar
+                    </a>
+                <% } %>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+
+        <!-- HEADER & LIVE STATUS -->
+        <div class="row align-items-center mb-4">
+            <div class="col-md-6">
+                <h4 class="fw-bold mb-1 text-dark">Dashboard Operasional IT</h4>
+                <p class="text-muted small mb-0">Ringkasan analitik tiket bantuan dan kondisi inventaris perangkat IT.</p>
+            </div>
+            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                <div class="d-inline-flex align-items-center bg-white px-3 py-1.5 rounded-pill border shadow-sm small">
+                    <span class="live-indicator me-2"></span>
+                    <span class="text-muted">Live Auto-Refresh (5s)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== KPI SUMMARY CARDS ==================== -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="card p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium mb-1">Total Tiket Masuk</div>
+                            <h3 class="fw-bold text-dark mb-0" id="kpi-total-tickets">0</h3>
+                        </div>
+                        <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-ticket-detailed"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium mb-1">Tiket Aktif (Open/Proses)</div>
+                            <h3 class="fw-bold text-warning mb-0" id="kpi-open-tickets">0</h3>
+                        </div>
+                        <div class="kpi-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium mb-1">Total Perangkat Terdata</div>
+                            <h3 class="fw-bold text-success mb-0" id="kpi-total-assets">0</h3>
+                        </div>
+                        <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-laptop"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium mb-1">Perangkat Bermasalah</div>
+                            <h3 class="fw-bold text-danger mb-0" id="kpi-issue-assets">0</h3>
+                        </div>
+                        <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== CHARTS / GRAFIK ANALITIK ==================== -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-4">
+                <div class="card p-4 h-100">
+                    <h6 class="fw-bold text-dark mb-1">Status Tiket IT Support</h6>
+                    <p class="text-muted small mb-3">Distribusi penyelesaian keluhan</p>
+                    <div class="chart-container">
+                        <canvas id="ticketStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card p-4 h-100">
+                    <h6 class="fw-bold text-dark mb-1">Stok & Jenis Perangkat</h6>
+                    <p class="text-muted small mb-3">Jumlah unit berdasarkan kategori hardware</p>
+                    <div class="chart-container">
+                        <canvas id="assetTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card p-4 h-100">
+                    <h6 class="fw-bold text-dark mb-1">Kesehatan Perangkat IT</h6>
+                    <p class="text-muted small mb-3">Kondisi fisik unit yang dipinjam karyawan</p>
+                    <div class="chart-container">
+                        <canvas id="assetConditionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== BAGIAN 1: TIKET IT SUPPORT ==================== -->
+        <div class="card mb-4">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-4 pb-3 px-4">
+                <div>
+                    <h5 class="mb-1 fw-bold text-dark"><i class="bi bi-ticket-detailed text-primary me-2"></i>Daftar Tiket IT Support</h5>
+                    <p class="text-muted small mb-0">Permintaan bantuan dan pengadaan dari seluruh divisi.</p>
+                </div>
+                <a href="/tickets/new" class="btn btn-primary btn-sm px-3 shadow-sm d-flex align-items-center gap-1">
+                    <i class="bi bi-plus-lg"></i> Buat Tiket
+                </a>
+            </div>
+            <div class="card-body px-0 pt-0 pb-2">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 px-4">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Kode Tiket</th>
+                                <% if (user.role === 'admin') { %><th>Pemohon</th><% } %>
+                                <th>Kategori</th>
+                                <th>Judul & Detail Kendala</th>
+                                <th>Prioritas</th>
+                                <th>Status</th>
+                                <th>Catatan IT</th>
+                                <% if (user.role === 'admin') { %><th class="text-end pe-4">Aksi</th><% } %>
+                            </tr>
+                        </thead>
+                        <tbody id="ticket-table-body">
+                            <tr><td colspan="8" class="text-center text-muted py-4">Memuat data tiket...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer Tiket -->
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center px-4 pt-3 pb-2 border-top mt-2">
+                    <div class="text-muted small mb-2 mb-sm-0" id="ticket-pagination-info">Menampilkan 0 data</div>
+                    <nav aria-label="Navigasi halaman tiket">
+                        <ul class="pagination pagination-sm mb-0" id="ticket-pagination-controls"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== BAGIAN 2: INVENTARIS & STOK PERANGKAT IT ==================== -->
+        <div class="card">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-4 pb-3 px-4">
+                <div>
+                    <h5 class="mb-1 fw-bold text-dark"><i class="bi bi-laptop text-success me-2"></i>Inventaris & Perangkat IT Dipinjam</h5>
+                    <p class="text-muted small mb-0">Pendataan perangkat karyawan untuk laporan stok dan audit.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/assets/new" class="btn btn-success btn-sm px-3 shadow-sm d-flex align-items-center gap-1">
+                        <i class="bi bi-plus-lg"></i> Input Perangkat
+                    </a>
+                    <% if (user.role === 'admin') { %>
+                        <a href="/assets/export" class="btn btn-outline-success btn-sm px-3 shadow-sm d-flex align-items-center gap-1">
+                            <i class="bi bi-file-earmark-excel"></i> Export Excel
+                        </a>
+                    <% } %>
+                </div>
+            </div>
+            <div class="card-body px-0 pt-0 pb-2">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 px-4">
+                        <thead>
+                            <tr>
+                                <th class="ps-4"><%= user.role === 'admin' ? 'Pemegang & Divisi' : 'Jenis Perangkat' %></th>
+                                <% if (user.role === 'admin') { %><th>Jenis</th><% } %>
+                                <th>Merk & Tipe</th>
+                                <th>Serial Number</th>
+                                <th>Kode Aset</th>
+                                <th>Kondisi</th>
+                                <th>Kelengkapan</th>
+                                <th class="pe-4">Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="asset-table-body">
+                            <tr><td colspan="8" class="text-center text-muted py-4">Memuat data inventaris...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer Aset -->
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center px-4 pt-3 pb-2 border-top mt-2">
+                    <div class="text-muted small mb-2 mb-sm-0" id="asset-pagination-info">Menampilkan 0 data</div>
+                    <nav aria-label="Navigasi halaman aset">
+                        <ul class="pagination pagination-sm mb-0" id="asset-pagination-controls"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FOOTER MODERN -->
+    <%- include('partials/footer') %>
+
+    <!-- MODAL UPDATE TIKET -->
+    <% if (user.role === 'admin') { %>
+    <div class="modal fade" id="editTicketModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="editTicketForm" method="POST" class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold">Update Tiket: <span id="modal-ticket-code" class="text-primary"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Status Penanganan</label>
+                        <select name="status" id="modal-ticket-status" class="form-select" required>
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Catatan / Solusi Tim IT</label>
+                        <textarea name="catatan_it" id="modal-ticket-note" rows="3" class="form-control" placeholder="Tuliskan catatan teknis atau solusi..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script Chart.js, Pagination & AJAX Auto-Refresh -->
+    <script>
+        let lastTicketsSnapshot = '';
+        let lastAssetsSnapshot = '';
+
+        // State Data & Pagination
+        let allTickets = [];
+        let allAssets = [];
+        let currentUserRole = '<%= user.role %>';
+
+        const ITEMS_PER_PAGE = 10;
+        let currentTicketPage = 1;
+        let currentAssetPage = 1;
+
+        // ==================== INISIALISASI CHART.JS ====================
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#64748b';
+
+        const ticketStatusChart = new Chart(document.getElementById('ticketStatusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Open', 'In Progress', 'Resolved', 'Rejected'],
+                datasets: [{
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#3b82f6', '#06b6d4', '#22c55e', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } }
+                }
+            }
+        });
+
+        const assetTypeChart = new Chart(document.getElementById('assetTypeChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Laptop', 'PC Desktop', 'Monitor', 'Printer', 'Aksesoris', 'Lainnya'],
+                datasets: [{
+                    label: 'Jumlah Unit',
+                    data: [0, 0, 0, 0, 0, 0],
+                    backgroundColor: '#6366f1',
+                    borderRadius: 6,
+                    barThickness: 22
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+
+        const assetConditionChart = new Chart(document.getElementById('assetConditionChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Baik / Normal', 'Rusak Ringan', 'Maintenance', 'Rusak Berat'],
+                datasets: [{
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } }
+                }
+            }
+        });
+
+        function updateChartsAndKPI(tickets, assets) {
+            document.getElementById('kpi-total-tickets').innerText = tickets.length;
+            document.getElementById('kpi-open-tickets').innerText = tickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length;
+            document.getElementById('kpi-total-assets').innerText = assets.length;
+            document.getElementById('kpi-issue-assets').innerText = assets.filter(a => a.kondisi !== 'Baik / Normal').length;
+
+            ticketStatusChart.data.datasets[0].data = [
+                tickets.filter(t => t.status === 'Open').length,
+                tickets.filter(t => t.status === 'In Progress').length,
+                tickets.filter(t => t.status === 'Resolved').length,
+                tickets.filter(t => t.status === 'Rejected').length
+            ];
+            ticketStatusChart.update();
+
+            assetTypeChart.data.datasets[0].data = [
+                assets.filter(a => a.jenis_perangkat === 'Laptop').length,
+                assets.filter(a => a.jenis_perangkat === 'PC Desktop').length,
+                assets.filter(a => a.jenis_perangkat === 'Monitor').length,
+                assets.filter(a => a.jenis_perangkat === 'Printer/Scanner').length,
+                assets.filter(a => a.jenis_perangkat === 'Mouse/Keyboard').length,
+                assets.filter(a => a.jenis_perangkat === 'Lainnya').length
+            ];
+            assetTypeChart.update();
+
+            assetConditionChart.data.datasets[0].data = [
+                assets.filter(a => a.kondisi === 'Baik / Normal').length,
+                assets.filter(a => a.kondisi === 'Rusak Ringan').length,
+                assets.filter(a => a.kondisi === 'Perlu Maintenance').length,
+                assets.filter(a => a.kondisi === 'Rusak Berat').length
+            ];
+            assetConditionChart.update();
+        }
+
+        // ==================== HELPER PAGINATION ====================
+        function buildPaginationHTML(totalItems, currentPage, onPageChangeFnName) {
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+            if (totalPages <= 1) return '';
+
+            let html = `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <button class="page-link" onclick="${onPageChangeFnName}(${currentPage - 1})">&laquo; Prev</button>
+                </li>
+            `;
+
+            // Tampilkan maksimal 5 tombol nomor halaman di sekitar halaman aktif
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+
+            if (startPage > 1) {
+                html += `<li class="page-item"><button class="page-link" onclick="${onPageChangeFnName}(1)">1</button></li>`;
+                if (startPage > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+
+            for (let p = startPage; p <= endPage; p++) {
+                html += `
+                    <li class="page-item ${p === currentPage ? 'active' : ''}">
+                        <button class="page-link" onclick="${onPageChangeFnName}(${p})">${p}</button>
+                    </li>
+                `;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                html += `<li class="page-item"><button class="page-link" onclick="${onPageChangeFnName}(${totalPages})">${totalPages}</button></li>`;
+            }
+
+            html += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <button class="page-link" onclick="${onPageChangeFnName}(${currentPage + 1})">Next &raquo;</button>
+                </li>
+            `;
+            return html;
+        }
+
+        function changeTicketPage(page) {
+            const totalPages = Math.ceil(allTickets.length / ITEMS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            currentTicketPage = page;
+            renderTicketsTable();
+        }
+
+        function changeAssetPage(page) {
+            const totalPages = Math.ceil(allAssets.length / ITEMS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            currentAssetPage = page;
+            renderAssetsTable();
+        }
+
+        // ==================== RENDER TABEL DENGAN PAGINATION ====================
+        function renderTicketsTable() {
+            const ticketBody = document.getElementById('ticket-table-body');
+            const infoEl = document.getElementById('ticket-pagination-info');
+            const controlsEl = document.getElementById('ticket-pagination-controls');
+
+            if (allTickets.length === 0) {
+                ticketBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Belum ada tiket masuk.</td></tr>`;
+                infoEl.innerText = 'Menampilkan 0 data';
+                controlsEl.innerHTML = '';
+                return;
+            }
+
+            const totalPages = Math.ceil(allTickets.length / ITEMS_PER_PAGE);
+            if (currentTicketPage > totalPages) currentTicketPage = totalPages;
+
+            const startIdx = (currentTicketPage - 1) * ITEMS_PER_PAGE;
+            const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, allTickets.length);
+            const pageItems = allTickets.slice(startIdx, endIdx);
+
+            let ticketHtml = '';
+            pageItems.forEach(t => {
+                let prioritasBadge = 'bg-secondary bg-opacity-10 text-secondary';
+                if (t.prioritas === 'Urgent') prioritasBadge = 'bg-danger bg-opacity-10 text-danger';
+                else if (t.prioritas === 'High') prioritasBadge = 'bg-warning bg-opacity-10 text-warning text-dark';
+                else if (t.prioritas === 'Medium') prioritasBadge = 'bg-info bg-opacity-10 text-info text-dark';
+
+                let statusBadge = 'bg-primary bg-opacity-10 text-primary';
+                if (t.status === 'Resolved') statusBadge = 'bg-success bg-opacity-10 text-success';
+                else if (t.status === 'In Progress') statusBadge = 'bg-info bg-opacity-10 text-info text-dark';
+                else if (t.status === 'Rejected') statusBadge = 'bg-danger bg-opacity-10 text-danger';
+
+                ticketHtml += `
+                    <tr>
+                        <td class="ps-4 fw-semibold text-dark">${t.ticket_code}</td>
+                        ${currentUserRole === 'admin' ? `<td><div class="fw-medium text-dark">${t.pemohon}</div><span class="text-muted" style="font-size: 0.75rem;">${t.departemen}</span></td>` : ''}
+                        <td><span class="badge bg-light text-secondary border">${t.kategori}</span></td>
+                        <td>
+                            <div class="fw-semibold text-dark">${t.judul}</div>
+                            <div class="text-muted text-truncate" style="max-width: 300px; font-size: 0.8rem;">${t.deskripsi}</div>
+                        </td>
+                        <td><span class="badge ${prioritasBadge}">${t.prioritas}</span></td>
+                        <td><span class="badge ${statusBadge}">${t.status}</span></td>
+                        <td><span class="text-muted" style="font-size: 0.85rem;">${t.catatan_it || '-'}</span></td>
+                        ${currentUserRole === 'admin' ? `
+                            <td class="text-end pe-4">
+                                <button type="button" class="btn btn-sm btn-light border px-3" 
+                                    onclick="openEditModal('${t.id}', '${escapeStr(t.ticket_code)}', '${escapeStr(t.status)}', '${escapeStr(t.catatan_it)}')">
+                                    <i class="bi bi-pencil-square me-1"></i> Update
+                                </button>
+                            </td>
+                        ` : ''}
+                    </tr>
+                `;
+            });
+
+            ticketBody.innerHTML = ticketHtml;
+            infoEl.innerText = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${allTickets.length} tiket`;
+            controlsEl.innerHTML = buildPaginationHTML(allTickets.length, currentTicketPage, 'changeTicketPage');
+        }
+
+        function renderAssetsTable() {
+            const assetBody = document.getElementById('asset-table-body');
+            const infoEl = document.getElementById('asset-pagination-info');
+            const controlsEl = document.getElementById('asset-pagination-controls');
+
+            if (allAssets.length === 0) {
+                assetBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Belum ada data perangkat terdaftar.</td></tr>`;
+                infoEl.innerText = 'Menampilkan 0 data';
+                controlsEl.innerHTML = '';
+                return;
+            }
+
+            const totalPages = Math.ceil(allAssets.length / ITEMS_PER_PAGE);
+            if (currentAssetPage > totalPages) currentAssetPage = totalPages;
+
+            const startIdx = (currentAssetPage - 1) * ITEMS_PER_PAGE;
+            const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, allAssets.length);
+            const pageItems = allAssets.slice(startIdx, endIdx);
+
+            let assetHtml = '';
+            pageItems.forEach(a => {
+                let kondisiBadge = a.kondisi === 'Baik / Normal' ? 'bg-success bg-opacity-10 text-success' : 'bg-warning bg-opacity-10 text-warning text-dark';
+                assetHtml += `
+                    <tr>
+                        ${currentUserRole === 'admin' ? `<td class="ps-4"><div class="fw-medium text-dark">${a.pemegang}</div><span class="text-muted" style="font-size: 0.75rem;">${a.departemen}</span></td>` : `<td class="ps-4 fw-medium text-dark">${a.jenis_perangkat}</td>`}
+                        ${currentUserRole === 'admin' ? `<td><span class="badge bg-light text-secondary border">${a.jenis_perangkat}</span></td>` : ''}
+                        <td class="fw-semibold text-dark">${a.merk_tipe}</td>
+                        <td><code class="text-primary bg-light px-2 py-1 rounded small">${a.serial_number}</code></td>
+                        <td><span class="text-muted">${a.kode_aset || '-'}</span></td>
+                        <td><span class="badge ${kondisiBadge}">${a.kondisi}</span></td>
+                        <td>${a.kelengkapan}</td>
+                        <td class="pe-4 text-muted">${a.keterangan || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            assetBody.innerHTML = assetHtml;
+            infoEl.innerText = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${allAssets.length} perangkat`;
+            controlsEl.innerHTML = buildPaginationHTML(allAssets.length, currentAssetPage, 'changeAssetPage');
+        }
+
+        // ==================== MODAL & AJAX POLLING ====================
+        function openEditModal(id, code, status, note) {
+            document.getElementById('editTicketForm').action = `/tickets/${id}/update`;
+            document.getElementById('modal-ticket-code').innerText = code;
+            document.getElementById('modal-ticket-status').value = status;
+            document.getElementById('modal-ticket-note').value = note || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editTicketModal'));
+            modal.show();
+        }
+
+        function escapeStr(str) {
+            if (!str) return '';
+            return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+        }
+
+        async function fetchDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard-data');
+                const result = await response.json();
+
+                if (!result.success) return;
+
+                const { tickets, assets, userRole } = result;
+                currentUserRole = userRole;
+                allTickets = tickets;
+                allAssets = assets;
+
+                const currentTicketsSnapshot = JSON.stringify(tickets);
+                const currentAssetsSnapshot = JSON.stringify(assets);
+
+                if (currentTicketsSnapshot !== lastTicketsSnapshot || currentAssetsSnapshot !== lastAssetsSnapshot) {
+                    updateChartsAndKPI(tickets, assets);
+                }
+
+                if (currentTicketsSnapshot !== lastTicketsSnapshot) {
+                    lastTicketsSnapshot = currentTicketsSnapshot;
+                    renderTicketsTable();
+                }
+
+                if (currentAssetsSnapshot !== lastAssetsSnapshot) {
+                    lastAssetsSnapshot = currentAssetsSnapshot;
+                    renderAssetsTable();
+                }
+
+            } catch (err) {
+                console.error('Gagal mengambil data AJAX:', err);
+            }
+        }
+
+        fetchDashboardData();
+        setInterval(fetchDashboardData, 5000);
+    </script>
+</body>
+<!-- ==================== SWEETALERT2 SOP PENGGUNAAN LAPTOP ==================== -->
+<% if (typeof showSopAlert !== 'undefined' && showSopAlert) { %>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        Swal.fire({
+            title: '<div class="fs-5 fw-bold text-dark"><i class="bi bi-shield-lock-fill text-primary me-2"></i>SOP Penggunaan & Keamanan Laptop</div>',
+            html: `
+                <div class="text-start small" style="max-height: 360px; overflow-y: auto; padding-right: 8px; line-height: 1.55;">
+                    <div class="alert alert-primary py-2 px-3 mb-3 border-0 bg-primary bg-opacity-10 text-primary">
+                        <strong>No. Dokumen: SOP-IT-001</strong> | PT Kalinda Sukses Abadi<br>
+                        <span style="font-size: 0.78rem;">Harap baca dan patuhi ketentuan berikut sebelum menggunakan fasilitas sistem & perangkat IT perusahaan:</span>
+                    </div>
+
+                    <p class="fw-bold text-dark mb-1">1. Aturan Umum & Perawatan Fisik</p>
+                    <ul class="ps-3 mb-3 text-secondary">
+                        <li><strong>Keamanan Fisik:</strong> Dilarang makan/minum di dekat laptop, wajib menggunakan tas pelindung saat mobilisasi, dan dilarang meninggalkan laptop tanpa pengawasan di area publik/kendaraan.</li>
+                        <li><strong>Kunci Layar:</strong> Wajib mengaktifkan password/PIN dan menekan <code>Windows + L</code> setiap kali meninggalkan meja kerja.</li>
+                        <li><strong>Penggunaan Charger:</strong> Pengisian daya hanya diwajibkan saat baterai habis; tidak dianjurkan terus-menerus mencolok charger sambil bekerja.</li>
+                        <li><strong>Menutup Laptop:</strong> Dilarang menutup layar laptop dalam keadaan menyala; wajib dalam kondisi <strong>Sleep</strong> atau <strong>Shutdown</strong> terlebih dahulu.</li>
+                        <li><strong>Jaringan & Penggunaan:</strong> Gunakan VPN resmi saat mengakses Wi-Fi publik dan gunakan laptop khusus untuk operasional pekerjaan.</li>
+                    </ul>
+
+                    <p class="fw-bold text-dark mb-1">2. Kebijakan Software & Larangan Keras</p>
+                    <ul class="ps-3 mb-3 text-secondary">
+                        <li>Akun Windows pengguna ditetapkan sebagai <strong>Standard User (Non-Admin)</strong>.</li>
+                        <li><strong>Dilarang Keras Menginstal:</strong> Aplikasi Torrent/P2P, Game & Emulator (Steam, BlueStacks, dll.), Remote Access pribadi tanpa izin IT (AnyDesk/TeamViewer pribadi), VPN/Proxy gratis tidak terverifikasi, serta aplikasi cleaner/optimizer (CCleaner, Driver Booster, dll.).</li>
+                        <li>Permintaan instalasi software tambahan wajib diajukan melalui <strong>Sistem Ticketing IT</strong> dengan persetujuan Kepala Divisi.</li>
+                    </ul>
+
+                    <p class="fw-bold text-dark mb-1">3. Audit & Sanksi Pelanggaran</p>
+                    <ul class="ps-3 mb-0 text-secondary">
+                        <li>Departemen IT berhak melakukan audit berkala dan menghapus (<em>uninstall</em>) aplikasi ilegal tanpa pemberitahuan sebelumnya.</li>
+                        <li>Pelanggaran berulang atau kerusakan/kebocoran data akibat kelalaian akan dilaporkan ke <strong>HR & GA</strong> untuk dikenakan sanksi perusahaan.</li>
+                    </ul>
+                </div>
+            `,
+            width: '680px',
+            confirmButtonText: '<i class="bi bi-check-circle me-1"></i> Oke, Saya Mengerti & Setuju',
+            confirmButtonColor: '#0d6efd',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            backdrop: 'rgba(15, 23, 42, 0.75)',
+            customClass: {
+                popup: 'rounded-4 shadow-lg border-0',
+                confirmButton: 'btn btn-primary px-4 py-2 fw-semibold rounded-3'
+            }
+        });
+    });
+</script>
+<% } %>
+</html>
