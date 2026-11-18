@@ -222,8 +222,13 @@
         <div class="card mb-4">
             <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-4 pb-3 px-4">
                 <div>
-                    <h5 class="mb-1 fw-bold text-dark"><i class="bi bi-ticket-detailed text-primary me-2"></i>Daftar Tiket IT Support</h5>
-                    <p class="text-muted small mb-0">Permintaan bantuan dan pengadaan dari seluruh divisi.</p>
+                    <h5 class="mb-1 fw-bold text-dark">
+                        <i class="bi bi-ticket-detailed text-primary me-2"></i>
+                        <%= user.role === 'admin' ? 'Daftar Semua Tiket IT Support' : 'Riwayat Tiket IT Saya' %>
+                    </h5>
+                    <p class="text-muted small mb-0">
+                        <%= user.role === 'admin' ? 'Permintaan bantuan dan pengadaan dari seluruh divisi.' : 'Daftar pengajuan bantuan dan pengadaan yang Anda kirimkan.' %>
+                    </p>
                 </div>
                 <a href="/tickets/new" class="btn btn-primary btn-sm px-3 shadow-sm d-flex align-items-center gap-1">
                     <i class="bi bi-plus-lg"></i> Buat Tiket
@@ -264,8 +269,13 @@
         <div class="card">
             <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-4 pb-3 px-4">
                 <div>
-                    <h5 class="mb-1 fw-bold text-dark"><i class="bi bi-laptop text-success me-2"></i>Inventaris & Perangkat IT Dipinjam</h5>
-                    <p class="text-muted small mb-0">Pendataan perangkat karyawan untuk laporan stok dan audit.</p>
+                    <h5 class="mb-1 fw-bold text-dark">
+                        <i class="bi bi-laptop text-success me-2"></i>
+                        <%= user.role === 'admin' ? 'Inventaris & Perangkat IT Seluruh Karyawan' : 'Perangkat IT yang Saya Pinjam' %>
+                    </h5>
+                    <p class="text-muted small mb-0">
+                        <%= user.role === 'admin' ? 'Pendataan perangkat seluruh karyawan untuk laporan stok dan audit.' : 'Daftar laptop dan perangkat pendukung yang tercatat atas nama Anda.' %>
+                    </p>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="/assets/new" class="btn btn-success btn-sm px-3 shadow-sm d-flex align-items-center gap-1">
@@ -283,18 +293,19 @@
                     <table class="table table-hover align-middle mb-0 px-4">
                         <thead>
                             <tr>
-                                <th class="ps-4"><%= user.role === 'admin' ? 'Pemegang & Divisi' : 'Jenis Perangkat' %></th>
-                                <% if (user.role === 'admin') { %><th>Jenis</th><% } %>
+                                <% if (user.role === 'admin') { %><th class="ps-4">Pemegang & Divisi</th><% } %>
+                                <th class="<%= user.role !== 'admin' ? 'ps-4' : '' %>">Jenis</th>
                                 <th>Merk & Tipe</th>
                                 <th>Serial Number</th>
                                 <th>Kode Aset</th>
                                 <th>Kondisi</th>
                                 <th>Kelengkapan</th>
-                                <th class="pe-4">Keterangan</th>
+                                <th>Keterangan</th>
+                                <th class="text-end pe-4">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="asset-table-body">
-                            <tr><td colspan="8" class="text-center text-muted py-4">Memuat data inventaris...</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-4">Memuat data inventaris...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -314,7 +325,7 @@
     <!-- FOOTER MODERN -->
     <%- include('partials/footer') %>
 
-    <!-- MODAL UPDATE TIKET -->
+    <!-- MODAL UPDATE TIKET (KHUSUS ADMIN) -->
     <% if (user.role === 'admin') { %>
     <div class="modal fade" id="editTicketModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -346,6 +357,41 @@
         </div>
     </div>
     <% } %>
+
+    <!-- MODAL UPDATE KONDISI PERANGKAT (UNTUK USER & ADMIN) -->
+    <div class="modal fade" id="editAssetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="editAssetForm" method="POST" class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold">Update Perangkat: <span id="modal-asset-name" class="text-success"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Kondisi Perangkat Saat Ini</label>
+                        <select name="kondisi" id="modal-asset-kondisi" class="form-select" required>
+                            <option value="Baik / Normal">Baik / Normal</option>
+                            <option value="Rusak Ringan">Rusak Ringan (Masih bisa dipakai)</option>
+                            <option value="Perlu Maintenance">Perlu Maintenance / Lemot</option>
+                            <option value="Rusak Berat">Rusak Berat (Tidak bisa dipakai)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Kelengkapan Saat Ini</label>
+                        <input type="text" name="kelengkapan" id="modal-asset-kelengkapan" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Keterangan Tambahan / Kondisi Fisik</label>
+                        <textarea name="keterangan" id="modal-asset-keterangan" rows="3" class="form-control" placeholder="Contoh: Charger masih normal, baterai mulai drop..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success btn-sm px-4">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -477,7 +523,6 @@
                 </li>
             `;
 
-            // Tampilkan maksimal 5 tombol nomor halaman di sekitar halaman aktif
             let startPage = Math.max(1, currentPage - 2);
             let endPage = Math.min(totalPages, startPage + 4);
             if (endPage - startPage < 4) {
@@ -591,7 +636,7 @@
             const controlsEl = document.getElementById('asset-pagination-controls');
 
             if (allAssets.length === 0) {
-                assetBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Belum ada data perangkat terdaftar.</td></tr>`;
+                assetBody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">Belum ada data perangkat terdaftar.</td></tr>`;
                 infoEl.innerText = 'Menampilkan 0 data';
                 controlsEl.innerHTML = '';
                 return;
@@ -606,17 +651,31 @@
 
             let assetHtml = '';
             pageItems.forEach(a => {
-                let kondisiBadge = a.kondisi === 'Baik / Normal' ? 'bg-success bg-opacity-10 text-success' : 'bg-warning bg-opacity-10 text-warning text-dark';
+                let kondisiBadge = 'bg-success bg-opacity-10 text-success';
+                if (a.kondisi === 'Rusak Berat') kondisiBadge = 'bg-danger bg-opacity-10 text-danger';
+                else if (a.kondisi !== 'Baik / Normal') kondisiBadge = 'bg-warning bg-opacity-10 text-warning text-dark';
+
                 assetHtml += `
                     <tr>
-                        ${currentUserRole === 'admin' ? `<td class="ps-4"><div class="fw-medium text-dark">${a.pemegang}</div><span class="text-muted" style="font-size: 0.75rem;">${a.departemen}</span></td>` : `<td class="ps-4 fw-medium text-dark">${a.jenis_perangkat}</td>`}
-                        ${currentUserRole === 'admin' ? `<td><span class="badge bg-light text-secondary border">${a.jenis_perangkat}</span></td>` : ''}
+                        ${currentUserRole === 'admin'
+                            ? `<td class="ps-4"><div class="fw-medium text-dark">${a.pemegang}</div><span class="text-muted" style="font-size: 0.75rem;">${a.departemen}</span></td>`
+                            : ''
+                        }
+                        <td class="${currentUserRole !== 'admin' ? 'ps-4' : ''}">
+                            <span class="badge bg-light text-secondary border">${a.jenis_perangkat}</span>
+                        </td>
                         <td class="fw-semibold text-dark">${a.merk_tipe}</td>
                         <td><code class="text-primary bg-light px-2 py-1 rounded small">${a.serial_number}</code></td>
                         <td><span class="text-muted">${a.kode_aset || '-'}</span></td>
                         <td><span class="badge ${kondisiBadge}">${a.kondisi}</span></td>
                         <td>${a.kelengkapan}</td>
-                        <td class="pe-4 text-muted">${a.keterangan || '-'}</td>
+                        <td class="text-muted">${a.keterangan || '-'}</td>
+                        <td class="text-end pe-4">
+                            <button type="button" class="btn btn-sm btn-light border px-3"
+                                onclick="openAssetModal('${a.id}', '${escapeStr(a.merk_tipe)}', '${escapeStr(a.kondisi)}', '${escapeStr(a.kelengkapan)}', '${escapeStr(a.keterangan)}')">
+                                <i class="bi bi-pencil-square me-1"></i> Update
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
@@ -628,12 +687,25 @@
 
         // ==================== MODAL & AJAX POLLING ====================
         function openEditModal(id, code, status, note) {
-            document.getElementById('editTicketForm').action = `/tickets/${id}/update`;
+            const form = document.getElementById('editTicketForm');
+            if (!form) return;
+            form.action = `/tickets/${id}/update`;
             document.getElementById('modal-ticket-code').innerText = code;
             document.getElementById('modal-ticket-status').value = status;
             document.getElementById('modal-ticket-note').value = note || '';
             
             const modal = new bootstrap.Modal(document.getElementById('editTicketModal'));
+            modal.show();
+        }
+
+        function openAssetModal(id, merkTipe, kondisi, kelengkapan, keterangan) {
+            document.getElementById('editAssetForm').action = `/assets/${id}/update`;
+            document.getElementById('modal-asset-name').innerText = merkTipe;
+            document.getElementById('modal-asset-kondisi').value = kondisi;
+            document.getElementById('modal-asset-kelengkapan').value = kelengkapan;
+            document.getElementById('modal-asset-keterangan').value = keterangan || '';
+
+            const modal = new bootstrap.Modal(document.getElementById('editAssetModal'));
             modal.show();
         }
 
@@ -649,16 +721,26 @@
 
                 if (!result.success) return;
 
-                const { tickets, assets, userRole } = result;
+                const { userRole, currentUserId } = result;
                 currentUserRole = userRole;
-                allTickets = tickets;
-                allAssets = assets;
 
-                const currentTicketsSnapshot = JSON.stringify(tickets);
-                const currentAssetsSnapshot = JSON.stringify(assets);
+                // Pengaman lapis kedua: pastikan non-admin hanya merender data miliknya sendiri
+                const filteredTickets = userRole === 'admin'
+                    ? result.tickets
+                    : result.tickets.filter(t => Number(t.user_id) === Number(currentUserId));
+
+                const filteredAssets = userRole === 'admin'
+                    ? result.assets
+                    : result.assets.filter(a => Number(a.user_id) === Number(currentUserId));
+
+                allTickets = filteredTickets;
+                allAssets = filteredAssets;
+
+                const currentTicketsSnapshot = JSON.stringify(filteredTickets);
+                const currentAssetsSnapshot = JSON.stringify(filteredAssets);
 
                 if (currentTicketsSnapshot !== lastTicketsSnapshot || currentAssetsSnapshot !== lastAssetsSnapshot) {
-                    updateChartsAndKPI(tickets, assets);
+                    updateChartsAndKPI(filteredTickets, filteredAssets);
                 }
 
                 if (currentTicketsSnapshot !== lastTicketsSnapshot) {
@@ -679,56 +761,57 @@
         fetchDashboardData();
         setInterval(fetchDashboardData, 5000);
     </script>
-</body>
-<!-- ==================== SWEETALERT2 SOP PENGGUNAAN LAPTOP ==================== -->
-<% if (typeof showSopAlert !== 'undefined' && showSopAlert) { %>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        Swal.fire({
-            title: '<div class="fs-5 fw-bold text-dark"><i class="bi bi-shield-lock-fill text-primary me-2"></i>SOP Penggunaan & Keamanan Laptop</div>',
-            html: `
-                <div class="text-start small" style="max-height: 360px; overflow-y: auto; padding-right: 8px; line-height: 1.55;">
-                    <div class="alert alert-primary py-2 px-3 mb-3 border-0 bg-primary bg-opacity-10 text-primary">
-                        <strong>No. Dokumen: SOP-IT-001</strong> | PT Kalinda Sukses Abadi<br>
-                        <span style="font-size: 0.78rem;">Harap baca dan patuhi ketentuan berikut sebelum menggunakan fasilitas sistem & perangkat IT perusahaan:</span>
+
+    <!-- ==================== SWEETALERT2 SOP PENGGUNAAN LAPTOP ==================== -->
+    <% if (typeof showSopAlert !== 'undefined' && showSopAlert) { %>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                title: '<div class="fs-5 fw-bold text-dark"><i class="bi bi-shield-lock-fill text-primary me-2"></i>SOP Penggunaan & Keamanan Laptop</div>',
+                html: `
+                    <div class="text-start small" style="max-height: 360px; overflow-y: auto; padding-right: 8px; line-height: 1.55;">
+                        <div class="alert alert-primary py-2 px-3 mb-3 border-0 bg-primary bg-opacity-10 text-primary">
+                            <strong>No. Dokumen: SOP-IT-001</strong> | PT Kalinda Sukses Abadi<br>
+                            <span style="font-size: 0.78rem;">Harap baca dan patuhi ketentuan berikut sebelum menggunakan fasilitas sistem & perangkat IT perusahaan:</span>
+                        </div>
+
+                        <p class="fw-bold text-dark mb-1">1. Aturan Umum & Perawatan Fisik</p>
+                        <ul class="ps-3 mb-3 text-secondary">
+                            <li><strong>Keamanan Fisik:</strong> Dilarang makan/minum di dekat laptop, wajib menggunakan tas pelindung saat mobilisasi, dan dilarang meninggalkan laptop tanpa pengawasan di area publik/kendaraan[cite: 1].</li>
+                            <li><strong>Kunci Layar:</strong> Wajib mengaktifkan password/PIN dan menekan <code>Windows + L</code> setiap kali meninggalkan meja kerja[cite: 1].</li>
+                            <li><strong>Penggunaan Charger:</strong> Pengisian daya hanya diwajibkan saat baterai habis; tidak dianjurkan terus-menerus mencolok charger sambil bekerja[cite: 1].</li>
+                            <li><strong>Menutup Laptop:</strong> Dilarang menutup layar laptop dalam keadaan menyala; wajib dalam kondisi <strong>Sleep</strong> atau <strong>Shutdown</strong> terlebih dahulu[cite: 1].</li>
+                            <li><strong>Jaringan & Penggunaan:</strong> Gunakan VPN resmi saat mengakses Wi-Fi publik dan gunakan laptop khusus untuk operasional pekerjaan[cite: 1].</li>
+                        </ul>
+
+                        <p class="fw-bold text-dark mb-1">2. Kebijakan Software & Larangan Keras</p>
+                        <ul class="ps-3 mb-3 text-secondary">
+                            <li>Akun Windows pengguna ditetapkan sebagai <strong>Standard User (Non-Admin)</strong>[cite: 1].</li>
+                            <li><strong>Dilarang Keras Menginstal:</strong> Aplikasi Torrent/P2P, Game & Emulator (Steam, BlueStacks, dll.), Remote Access pribadi tanpa izin IT (AnyDesk/TeamViewer pribadi), VPN/Proxy gratis tidak terverifikasi, serta aplikasi cleaner/optimizer (CCleaner, Driver Booster, dll.)[cite: 2].</li>
+                            <li>Permintaan instalasi software tambahan wajib diajukan melalui <strong>Sistem Ticketing IT</strong> dengan persetujuan Kepala Divisi[cite: 2, 3].</li>
+                        </ul>
+
+                        <p class="fw-bold text-dark mb-1">3. Audit & Sanksi Pelanggaran</p>
+                        <ul class="ps-3 mb-0 text-secondary">
+                            <li>Departemen IT berhak melakukan audit berkala dan menghapus (<em>uninstall</em>) aplikasi ilegal tanpa pemberitahuan sebelumnya[cite: 3].</li>
+                            <li>Pelanggaran berulang atau kerusakan/kebocoran data akibat kelalaian akan dilaporkan ke <strong>HR & GA</strong> untuk dikenakan sanksi perusahaan[cite: 3].</li>
+                        </ul>
                     </div>
-
-                    <p class="fw-bold text-dark mb-1">1. Aturan Umum & Perawatan Fisik</p>
-                    <ul class="ps-3 mb-3 text-secondary">
-                        <li><strong>Keamanan Fisik:</strong> Dilarang makan/minum di dekat laptop, wajib menggunakan tas pelindung saat mobilisasi, dan dilarang meninggalkan laptop tanpa pengawasan di area publik/kendaraan.</li>
-                        <li><strong>Kunci Layar:</strong> Wajib mengaktifkan password/PIN dan menekan <code>Windows + L</code> setiap kali meninggalkan meja kerja.</li>
-                        <li><strong>Penggunaan Charger:</strong> Pengisian daya hanya diwajibkan saat baterai habis; tidak dianjurkan terus-menerus mencolok charger sambil bekerja.</li>
-                        <li><strong>Menutup Laptop:</strong> Dilarang menutup layar laptop dalam keadaan menyala; wajib dalam kondisi <strong>Sleep</strong> atau <strong>Shutdown</strong> terlebih dahulu.</li>
-                        <li><strong>Jaringan & Penggunaan:</strong> Gunakan VPN resmi saat mengakses Wi-Fi publik dan gunakan laptop khusus untuk operasional pekerjaan.</li>
-                    </ul>
-
-                    <p class="fw-bold text-dark mb-1">2. Kebijakan Software & Larangan Keras</p>
-                    <ul class="ps-3 mb-3 text-secondary">
-                        <li>Akun Windows pengguna ditetapkan sebagai <strong>Standard User (Non-Admin)</strong>.</li>
-                        <li><strong>Dilarang Keras Menginstal:</strong> Aplikasi Torrent/P2P, Game & Emulator (Steam, BlueStacks, dll.), Remote Access pribadi tanpa izin IT (AnyDesk/TeamViewer pribadi), VPN/Proxy gratis tidak terverifikasi, serta aplikasi cleaner/optimizer (CCleaner, Driver Booster, dll.).</li>
-                        <li>Permintaan instalasi software tambahan wajib diajukan melalui <strong>Sistem Ticketing IT</strong> dengan persetujuan Kepala Divisi.</li>
-                    </ul>
-
-                    <p class="fw-bold text-dark mb-1">3. Audit & Sanksi Pelanggaran</p>
-                    <ul class="ps-3 mb-0 text-secondary">
-                        <li>Departemen IT berhak melakukan audit berkala dan menghapus (<em>uninstall</em>) aplikasi ilegal tanpa pemberitahuan sebelumnya.</li>
-                        <li>Pelanggaran berulang atau kerusakan/kebocoran data akibat kelalaian akan dilaporkan ke <strong>HR & GA</strong> untuk dikenakan sanksi perusahaan.</li>
-                    </ul>
-                </div>
-            `,
-            width: '680px',
-            confirmButtonText: '<i class="bi bi-check-circle me-1"></i> Oke, Saya Mengerti & Setuju',
-            confirmButtonColor: '#0d6efd',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            allowEnterKey: false,
-            backdrop: 'rgba(15, 23, 42, 0.75)',
-            customClass: {
-                popup: 'rounded-4 shadow-lg border-0',
-                confirmButton: 'btn btn-primary px-4 py-2 fw-semibold rounded-3'
-            }
+                `,
+                width: '680px',
+                confirmButtonText: '<i class="bi bi-check-circle me-1"></i> Oke, Saya Mengerti & Setuju',
+                confirmButtonColor: '#0d6efd',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                allowEnterKey: false,
+                backdrop: 'rgba(15, 23, 42, 0.75)',
+                customClass: {
+                    popup: 'rounded-4 shadow-lg border-0',
+                    confirmButton: 'btn btn-primary px-4 py-2 fw-semibold rounded-3'
+                }
+            });
         });
-    });
-</script>
-<% } %>
+    </script>
+    <% } %>
+</body>
 </html>

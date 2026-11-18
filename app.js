@@ -98,18 +98,22 @@ app.get('/logout', (req, res) => {
 });
 
 
-// ==================== DASHBOARD ROUTES (UPDATE GET /dashboard) ====================
+// ==================== DASHBOARD ROUTES ====================
 
 app.get('/dashboard', isAuthenticated, async (req, res) => {
     const user = req.session.user;
-    
-    // Ambil status flag SOP lalu langsung hapus dari session agar tidak muncul lagi saat refresh
+    const role = (user.role || 'user').toLowerCase().trim();
+    const userId = Number(user.id);
+
     const showSopAlert = req.session.showSopAlert || false;
     req.session.showSopAlert = false;
 
     try {
-        let tickets, assets;
-        if (user.role === 'admin') {
+        let tickets = [];
+        let assets = [];
+
+        if (role === 'admin') {
+            // Admin IT melihat seluruh data dari semua karyawan
             [tickets] = await db.query(`
                 SELECT t.*, u.nama AS pemohon, u.departemen 
                 FROM tickets t 
@@ -123,15 +127,17 @@ app.get('/dashboard', isAuthenticated, async (req, res) => {
                 ORDER BY a.tanggal_update DESC
             `);
         } else {
+            // Karyawan (user) HANYA melihat data yang dia input sendiri (berdasarkan user_id)
             [tickets] = await db.query(
                 'SELECT * FROM tickets WHERE user_id = ? ORDER BY created_at DESC',
-                [user.id]
+                [userId]
             );
             [assets] = await db.query(
                 'SELECT * FROM assets WHERE user_id = ? ORDER BY tanggal_update DESC',
-                [user.id]
+                [userId]
             );
         }
+
         res.render('dashboard', { tickets, assets, showSopAlert });
     } catch (err) {
         console.error(err);
@@ -182,24 +188,33 @@ app.post('/tickets/:id/update', isAuthenticated, isAdmin, async (req, res) => {
 
 // ==================== ASSET ROUTES ====================
 
-app.get('/assets/new', isAuthenticated, (req, res) => {
-    res.render('asset_form');
-});
+// ==================== UPDATE ASSET ROUTES ====================
 
-app.post('/assets', isAuthenticated, async (req, res) => {
-    const { jenis_perangkat, merk_tipe, serial_number, kode_aset, kondisi, kelengkapan, keterangan } = req.body;
-    const userId = req.session.user.id;
+app.post('/assets/:id/update', isAuthenticated, async (req, res) => {
+    const assetId = Number(req.params.id);
+    const { kondisi, kelengkapan, keterangan } = req.body;
+    const user = req.session.user;
+    const role = (user.role || 'user').toLowerCase().trim();
+    const userId = Number(user.id);
 
     try {
-        await db.query(
-            `INSERT INTO assets (user_id, jenis_perangkat, merk_tipe, serial_number, kode_aset, kondisi, kelengkapan, keterangan) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, jenis_perangkat, merk_tipe, serial_number, kode_aset, kondisi, kelengkapan, keterangan]
-        );
+        if (role === 'admin') {
+            // Admin IT dapat memperbarui semua perangkat
+            await db.query(
+                'UPDATE assets SET kondisi = ?, kelengkapan = ?, keterangan = ? WHERE id = ?',
+                [kondisi, kelengkapan, keterangan, assetId]
+            );
+        } else {
+            // Karyawan HANYA dapat memperbarui perangkat miliknya sendiri (WHERE id = ? AND user_id = ?)
+            await db.query(
+                'UPDATE assets SET kondisi = ?, kelengkapan = ?, keterangan = ? WHERE id = ? AND user_id = ?',
+                [kondisi, kelengkapan, keterangan, assetId, userId]
+            );
+        }
         res.redirect('/dashboard');
     } catch (err) {
         console.error(err);
-        res.status(500).send('Gagal menyimpan data aset (Pastikan Serial Number belum terdaftar).');
+        res.status(500).send('Gagal memperbarui data perangkat.');
     }
 });
 
@@ -286,9 +301,15 @@ app.listen(PORT, () => {
 
 app.get('/api/dashboard-data', isAuthenticated, async (req, res) => {
     const user = req.session.user;
+    const role = (user.role || 'user').toLowerCase().trim();
+    const userId = Number(user.id);
+
     try {
-        let tickets, assets;
-        if (user.role === 'admin') {
+        let tickets = [];
+        let assets = [];
+
+        if (role === 'admin') {
+            // Admin IT melihat seluruh tiket & aset perusahaan
             [tickets] = await db.query(`
                 SELECT t.*, u.nama AS pemohon, u.departemen 
                 FROM tickets t 
@@ -302,16 +323,24 @@ app.get('/api/dashboard-data', isAuthenticated, async (req, res) => {
                 ORDER BY a.tanggal_update DESC
             `);
         } else {
+            // Karyawan (user) HANYA mengambil data milik user_id-nya sendiri
             [tickets] = await db.query(
                 'SELECT * FROM tickets WHERE user_id = ? ORDER BY created_at DESC',
-                [user.id]
+                [userId]
             );
             [assets] = await db.query(
                 'SELECT * FROM assets WHERE user_id = ? ORDER BY tanggal_update DESC',
-                [user.id]
+                [userId]
             );
         }
-        res.json({ success: true, tickets, assets, userRole: user.role });
+
+        res.json({
+            success: true,
+            tickets,
+            assets,
+            userRole: role,
+            currentUserId: userId
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Gagal memuat data' });
