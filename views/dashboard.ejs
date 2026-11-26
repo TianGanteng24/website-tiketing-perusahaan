@@ -91,48 +91,98 @@
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
+
+        /* ==================== OPTIMASI MOBILE RESPONSIVE ==================== */
+        @media (max-width: 767.98px) {
+            .container {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+            /* Perkecil tinggi grafik sedikit agar proporsional di layar HP */
+            .chart-container {
+                height: 200px;
+            }
+            /* Jaga agar sel tabel tidak gepeng ke bawah saat di-scroll horizontal */
+            .table th, .table td {
+                white-space: nowrap;
+                font-size: 0.82rem;
+                padding: 0.65rem 0.75rem;
+            }
+            /* Kecuali kolom judul/deskripsi tetap diberi batas lebar agar rapi */
+            .table td.col-wrap {
+                white-space: normal;
+                min-width: 200px;
+            }
+            /* Sesuaikan ukuran kartu KPI di HP */
+            .kpi-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.15rem;
+            }
+            h3.fw-bold {
+                font-size: 1.35rem;
+            }
+        }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-    <!-- NAVBAR MODERN -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-3">
-        <div class="container">
-            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/dashboard">
-                <i class="bi bi-cpu-fill text-primary"></i> IT Support & Asset
-            </a>
-            <div class="d-flex align-items-center text-light gap-3">
-                <% if (user) { %>
-                    <div class="d-none d-md-block text-end">
-                        <div class="fw-semibold small lh-1"><%= user.nama %></div>
-                        <span class="text-muted" style="font-size: 0.75rem;"><%= user.departemen %> &bull; <span class="text-uppercase text-info"><%= user.role %></span></span>
-                    </div>
-                    <a href="/logout" class="btn btn-outline-light btn-sm px-3 d-flex align-items-center gap-1">
-                        <i class="bi bi-box-arrow-right"></i> Keluar
-                    </a>
-                <% } %>
-            </div>
-        </div>
-    </nav>
+<!-- NAVBAR MODERN & MOBILE RESPONSIVE -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-2 py-lg-3">
+    <div class="container">
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2 fs-6 fs-lg-5" href="/dashboard">
+            <i class="bi bi-cpu-fill text-primary"></i> IT Support & Asset
+        </a>
 
-<!-- HEADER & LIVE STATUS -->
-        <div class="row align-items-center mb-4">
-            <div class="col-md-6">
-                <h4 class="fw-bold mb-1 text-dark">Dashboard Operasional IT</h4>
-                <p class="text-muted small mb-0">Ringkasan analitik tiket bantuan dan kondisi inventaris perangkat IT.</p>
-            </div>
-            <div class="col-md-6 text-md-end mt-2 mt-md-0 d-flex justify-content-md-end align-items-center gap-2">
-                <% if (user.role === 'admin') { %>
-                    <button type="button" class="btn btn-dark btn-sm px-3 shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                        <i class="bi bi-person-plus-fill text-info"></i> Tambah User
+        <!-- Tombol Hamburger untuk Layar HP/Tablet -->
+        <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUserMenu" aria-controls="navbarUserMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-end mt-2 mt-lg-0" id="navbarUserMenu">
+            <% if (user) { %>
+                <div class="dropdown pt-2 pt-lg-0 border-top border-secondary border-opacity-25 border-lg-0">
+                    <button class="btn btn-outline-light d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                            <i class="bi bi-person-fill"></i>
+                        </span>
+                        <span class="text-start">
+                            <span class="d-block fw-semibold small"><%= user.nama %></span>
+                            <span class="d-block text-light opacity-75" style="font-size: 0.7rem;"><%= user.role %></span>
+                        </span>
                     </button>
-                <% } %>
-                <div class="d-inline-flex align-items-center bg-white px-3 py-1.5 rounded-pill border shadow-sm small">
-                    <span class="live-indicator me-2"></span>
-                    <span class="text-muted">Live Auto-Refresh (5s)</span>
+                    <ul class="dropdown-menu dropdown-menu-end shadow mt-2">
+                        <li class="px-3 py-2">
+                            <div class="fw-semibold"><%= user.nama %></div>
+                            <small class="text-muted"><%= user.departemen %> &bull; <span class="text-uppercase"><%= user.role %></span></small>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a href="/logout" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Keluar</a></li>
+                    </ul>
                 </div>
-            </div>
+            <% } %>
         </div>
+    </div>
+</nav>
+<br>
+<!-- HEADER & LIVE STATUS -->
+<div class="row align-items-center mb-4 g-2">
+    <div class="col-12 col-md-6 pb">
+        <h4 class="fw-bold mb-1 text-dark fs-5 fs-md-4">Dashboard Operasional IT</h4>
+        <p class="text-muted small mb-0">Ringkasan analitik tiket bantuan dan kondisi inventaris perangkat IT.</p>
+    </div>
+    <div class="col-12 col-md-6 d-flex flex-wrap justify-content-start justify-content-md-end align-items-center gap-2">
+        <% if (user.role === 'admin') { %>
+            <button type="button" class="btn btn-dark btn-sm px-3 shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                <i class="bi bi-person-plus-fill text-info"></i> Tambah User
+            </button>
+        <% } %>
+        <div class="d-inline-flex align-items-center bg-white px-3 py-1.5 rounded-pill border shadow-sm small">
+            <span class="live-indicator me-2"></span>
+            <span class="text-muted">Live Auto-Refresh (5s)</span>
+        </div>
+    </div>
+</div>
 
         <!-- ==================== KPI SUMMARY CARDS ==================== -->
         <div class="row g-3 mb-4">
@@ -220,10 +270,8 @@
                 </div>
             </div>
         </div>
-
-        <!-- ==================== BAGIAN 1: TIKET IT SUPPORT ==================== -->
-        <div class="card mb-4">
-            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-4 pb-3 px-4">
+            <!-- HEADER CARD 1: TIKET IT SUPPORT -->
+            <div class="card-header bg-white border-0 d-flex flex-wrap justify-content-between align-items-center gap-3 pt-4 pb-3 px-4">
                 <div>
                     <h5 class="mb-1 fw-bold text-dark">
                         <i class="bi bi-ticket-detailed text-primary me-2"></i>
@@ -233,9 +281,19 @@
                         <%= user.role === 'admin' ? 'Permintaan bantuan dan pengadaan dari seluruh divisi.' : 'Daftar pengajuan bantuan dan pengadaan yang Anda kirimkan.' %>
                     </p>
                 </div>
-                <a href="/tickets/new" class="btn btn-primary btn-sm px-3 shadow-sm d-flex align-items-center gap-1">
-                    <i class="bi bi-plus-lg"></i> Buat Tiket
-                </a>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <!-- Input Search Tiket -->
+                    <div class="input-group input-group-sm" style="width: 240px;">
+                        <span class="input-group-text bg-light border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="ticket-search-input" class="form-control bg-light border-start-0 ps-0" 
+                            placeholder="Cari kode, judul, pemohon, status...">
+                    </div>
+                    <a href="/tickets/new" class="btn btn-primary btn-sm px-3 shadow-sm d-flex align-items-center gap-1">
+                        <i class="bi bi-plus-lg"></i> Buat Tiket
+                    </a>
+                </div>
             </div>
             <div class="card-body px-0 pt-0 pb-2">
                 <div class="table-responsive">
@@ -253,7 +311,7 @@
                             </tr>
                         </thead>
                         <tbody id="ticket-table-body">
-                            <tr><td colspan="8" class="text-center text-muted py-4">Memuat data tiket...</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted pb-5">Memuat data tiket...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -268,9 +326,9 @@
             </div>
         </div>
 
-        <!-- ==================== BAGIAN 2: INVENTARIS & STOK PERANGKAT IT ==================== -->
-        <div class="card">
-            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-4 pb-3 px-4">
+            <!-- Contoh pada Header Card Inventaris Aset -->
+            <!-- HEADER CARD 2: INVENTARIS & STOK PERANGKAT IT -->
+            <div class="card-header bg-white border-0 d-flex flex-wrap justify-content-between align-items-center gap-3 pt-4 pb-3 px-4">
                 <div>
                     <h5 class="mb-1 fw-bold text-dark">
                         <i class="bi bi-laptop text-success me-2"></i>
@@ -280,7 +338,15 @@
                         <%= user.role === 'admin' ? 'Pendataan perangkat seluruh karyawan untuk laporan stok dan audit.' : 'Daftar laptop dan perangkat pendukung yang tercatat atas nama Anda.' %>
                     </p>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <!-- Input Search Perangkat -->
+                    <div class="input-group input-group-sm" style="width: 240px;">
+                        <span class="input-group-text bg-light border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="asset-search-input" class="form-control bg-light border-start-0 ps-0" 
+                            placeholder="Cari merk, S/N, jenis, kondisi...">
+                    </div>
                     <a href="/assets/new" class="btn btn-success btn-sm px-3 shadow-sm d-flex align-items-center gap-1">
                         <i class="bi bi-plus-lg"></i> Input Perangkat
                     </a>
@@ -308,7 +374,7 @@
                             </tr>
                         </thead>
                         <tbody id="asset-table-body">
-                            <tr><td colspan="9" class="text-center text-muted py-4">Memuat data inventaris...</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted pb-5">Memuat data inventaris...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -468,9 +534,59 @@
         let allAssets = [];
         let currentUserRole = '<%= user.role %>';
 
+        let ticketSearchQuery = '';
+        let assetSearchQuery = '';
+
         const ITEMS_PER_PAGE = 10;
         let currentTicketPage = 1;
         let currentAssetPage = 1;
+
+        // Helper untuk memfilter data tiket sesuai kata kunci
+        function getFilteredTickets() {
+            if (!ticketSearchQuery) return allTickets;
+            const q = ticketSearchQuery.toLowerCase();
+            return allTickets.filter(t =>
+                (t.ticket_code && t.ticket_code.toLowerCase().includes(q)) ||
+                (t.pemohon && t.pemohon.toLowerCase().includes(q)) ||
+                (t.departemen && t.departemen.toLowerCase().includes(q)) ||
+                (t.kategori && t.kategori.toLowerCase().includes(q)) ||
+                (t.judul && t.judul.toLowerCase().includes(q)) ||
+                (t.deskripsi && t.deskripsi.toLowerCase().includes(q)) ||
+                (t.prioritas && t.prioritas.toLowerCase().includes(q)) ||
+                (t.status && t.status.toLowerCase().includes(q)) ||
+                (t.catatan_it && t.catatan_it.toLowerCase().includes(q))
+            );
+        }
+
+        // Helper untuk memfilter data aset sesuai kata kunci
+        function getFilteredAssets() {
+            if (!assetSearchQuery) return allAssets;
+            const q = assetSearchQuery.toLowerCase();
+            return allAssets.filter(a =>
+                (a.pemegang && a.pemegang.toLowerCase().includes(q)) ||
+                (a.departemen && a.departemen.toLowerCase().includes(q)) ||
+                (a.jenis_perangkat && a.jenis_perangkat.toLowerCase().includes(q)) ||
+                (a.merk_tipe && a.merk_tipe.toLowerCase().includes(q)) ||
+                (a.serial_number && a.serial_number.toLowerCase().includes(q)) ||
+                (a.kode_aset && a.kode_aset.toLowerCase().includes(q)) ||
+                (a.kondisi && a.kondisi.toLowerCase().includes(q)) ||
+                (a.kelengkapan && a.kelengkapan.toLowerCase().includes(q)) ||
+                (a.keterangan && a.keterangan.toLowerCase().includes(q))
+            );
+        }
+
+        // Event Listener Input Search Real-Time
+        document.getElementById('ticket-search-input').addEventListener('input', function(e) {
+            ticketSearchQuery = e.target.value.trim();
+            currentTicketPage = 1;
+            renderTicketsTable();
+        });
+
+        document.getElementById('asset-search-input').addEventListener('input', function(e) {
+            assetSearchQuery = e.target.value.trim();
+            currentAssetPage = 1;
+            renderAssetsTable();
+        });
 
         // ==================== INISIALISASI CHART.JS ====================
         Chart.defaults.font.family = "'Inter', sans-serif";
@@ -618,14 +734,14 @@
         }
 
         function changeTicketPage(page) {
-            const totalPages = Math.ceil(allTickets.length / ITEMS_PER_PAGE);
+            const totalPages = Math.ceil(getFilteredTickets().length / ITEMS_PER_PAGE);
             if (page < 1 || page > totalPages) return;
             currentTicketPage = page;
             renderTicketsTable();
         }
 
         function changeAssetPage(page) {
-            const totalPages = Math.ceil(allAssets.length / ITEMS_PER_PAGE);
+            const totalPages = Math.ceil(getFilteredAssets().length / ITEMS_PER_PAGE);
             if (page < 1 || page > totalPages) return;
             currentAssetPage = page;
             renderAssetsTable();
@@ -636,20 +752,24 @@
             const ticketBody = document.getElementById('ticket-table-body');
             const infoEl = document.getElementById('ticket-pagination-info');
             const controlsEl = document.getElementById('ticket-pagination-controls');
+            const filteredTickets = getFilteredTickets();
 
-            if (allTickets.length === 0) {
-                ticketBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Belum ada tiket masuk.</td></tr>`;
+            if (filteredTickets.length === 0) {
+                const emptyMsg = ticketSearchQuery
+                    ? `Tidak ditemukan tiket yang cocok dengan kata kunci "<strong>${escapeStr(ticketSearchQuery)}</strong>".`
+                    : 'Belum ada tiket masuk.';
+                ticketBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">${emptyMsg}</td></tr>`;
                 infoEl.innerText = 'Menampilkan 0 data';
                 controlsEl.innerHTML = '';
                 return;
             }
 
-            const totalPages = Math.ceil(allTickets.length / ITEMS_PER_PAGE);
+            const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE);
             if (currentTicketPage > totalPages) currentTicketPage = totalPages;
 
             const startIdx = (currentTicketPage - 1) * ITEMS_PER_PAGE;
-            const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, allTickets.length);
-            const pageItems = allTickets.slice(startIdx, endIdx);
+            const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, filteredTickets.length);
+            const pageItems = filteredTickets.slice(startIdx, endIdx);
 
             let ticketHtml = '';
             pageItems.forEach(t => {
@@ -668,7 +788,7 @@
                         <td class="ps-4 fw-semibold text-dark">${t.ticket_code}</td>
                         ${currentUserRole === 'admin' ? `<td><div class="fw-medium text-dark">${t.pemohon}</div><span class="text-muted" style="font-size: 0.75rem;">${t.departemen}</span></td>` : ''}
                         <td><span class="badge bg-light text-secondary border">${t.kategori}</span></td>
-                        <td>
+                        <td class="col-wrap">
                             <div class="fw-semibold text-dark">${t.judul}</div>
                             <div class="text-muted text-truncate" style="max-width: 300px; font-size: 0.8rem;">${t.deskripsi}</div>
                         </td>
@@ -688,28 +808,32 @@
             });
 
             ticketBody.innerHTML = ticketHtml;
-            infoEl.innerText = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${allTickets.length} tiket`;
-            controlsEl.innerHTML = buildPaginationHTML(allTickets.length, currentTicketPage, 'changeTicketPage');
+            infoEl.innerText = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredTickets.length} tiket`;
+            controlsEl.innerHTML = buildPaginationHTML(filteredTickets.length, currentTicketPage, 'changeTicketPage');
         }
 
         function renderAssetsTable() {
             const assetBody = document.getElementById('asset-table-body');
             const infoEl = document.getElementById('asset-pagination-info');
             const controlsEl = document.getElementById('asset-pagination-controls');
+            const filteredAssets = getFilteredAssets();
 
-            if (allAssets.length === 0) {
-                assetBody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">Belum ada data perangkat terdaftar.</td></tr>`;
+            if (filteredAssets.length === 0) {
+                const emptyMsg = assetSearchQuery
+                    ? `Tidak ditemukan perangkat yang cocok dengan kata kunci "<strong>${escapeStr(assetSearchQuery)}</strong>".`
+                    : 'Belum ada data perangkat terdaftar.';
+                assetBody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">${emptyMsg}</td></tr>`;
                 infoEl.innerText = 'Menampilkan 0 data';
                 controlsEl.innerHTML = '';
                 return;
             }
 
-            const totalPages = Math.ceil(allAssets.length / ITEMS_PER_PAGE);
+            const totalPages = Math.ceil(filteredAssets.length / ITEMS_PER_PAGE);
             if (currentAssetPage > totalPages) currentAssetPage = totalPages;
 
             const startIdx = (currentAssetPage - 1) * ITEMS_PER_PAGE;
-            const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, allAssets.length);
-            const pageItems = allAssets.slice(startIdx, endIdx);
+            const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, filteredAssets.length);
+            const pageItems = filteredAssets.slice(startIdx, endIdx);
 
             let assetHtml = '';
             pageItems.forEach(a => {
@@ -743,8 +867,8 @@
             });
 
             assetBody.innerHTML = assetHtml;
-            infoEl.innerText = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${allAssets.length} perangkat`;
-            controlsEl.innerHTML = buildPaginationHTML(allAssets.length, currentAssetPage, 'changeAssetPage');
+            infoEl.innerText = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredAssets.length} perangkat`;
+            controlsEl.innerHTML = buildPaginationHTML(filteredAssets.length, currentAssetPage, 'changeAssetPage');
         }
 
         // ==================== MODAL & AJAX POLLING ====================
@@ -832,9 +956,8 @@
                 title: '<div class="fs-5 fw-bold text-dark"><i class="bi bi-shield-lock-fill text-primary me-2"></i>SOP Penggunaan & Keamanan Laptop</div>',
                 html: `
                     <div class="text-start small" style="max-height: 360px; overflow-y: auto; padding-right: 8px; line-height: 1.55;">
-                        <div class="alert alert-primary py-2 px-3 mb-3 border-0 bg-primary bg-opacity-10 text-primary">
-                            <strong>No. Dokumen: SOP-IT-001</strong> | PT Kalinda Sukses Abadi<br>
-                            <span style="font-size: 0.78rem;">Harap baca dan patuhi ketentuan berikut sebelum menggunakan fasilitas sistem & perangkat IT perusahaan:</span>
+                        <div class="text-start small" style="max-height: 55vh; overflow-y: auto; padding-right: 6px; line-height: 1.55;">
+                            <!-- Isi SOP tetap sama -->
                         </div>
 
                         <p class="fw-bold text-dark mb-1">1. Aturan Umum & Perawatan Fisik</p>
@@ -860,7 +983,7 @@
                         </ul>
                     </div>
                 `,
-                width: '680px',
+                width: window.innerWidth < 768 ? '95%' : '680px',                
                 confirmButtonText: '<i class="bi bi-check-circle me-1"></i> Oke, Saya Mengerti & Setuju',
                 confirmButtonColor: '#0d6efd',
                 allowOutsideClick: false,

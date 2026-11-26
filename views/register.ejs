@@ -33,6 +33,29 @@
             padding: 0.75rem;
             font-weight: 500;
         }
+
+        /* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 2.5rem; /* Ukuran font judul di HP lebih proporsional */
+  }
+  .hero {
+    height: 90vh; /* Sedikit lebih fleksibel di layar kecil */
+    text-align: center;
+  }
+  .hero .col-lg-8 {
+    padding: 0 1rem;
+  }
+  .section-padding {
+    padding: 60px 0; /* Padding section dikurangi di mobile */
+  }
+}
+
+/* Memastikan video dan gambar tidak pernah meluber keluar layar */
+img, video {
+  max-width: 100%;
+  height: auto;
+}
     </style>
 </head>
 <body class="d-flex align-items-center justify-content-center py-5" style="min-height: 100vh;">
