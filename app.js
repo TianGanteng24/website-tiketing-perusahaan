@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const ExcelJS = require('exceljs');
 const path = require('path');
 const db = require('./config/db');
-const { isAuthenticated, isAdmin } = require('./middleware/auth');
+const { isAdmin } = require('./middleware/auth');
 
 const app = express();
 
@@ -27,18 +27,19 @@ app.use((req, res, next) => {
     next();
 });
 
+
+
 // ==================== AUTH ROUTES ====================
 
-app.get('/', (req, res) => {
-    if (req.session.user) return res.redirect('/dashboard');
-    res.redirect('/login');
-});
-
 app.get('/login', (req, res) => {
-    res.render('login', { error: null });
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+    const errorMsg = req.query.session_expired === '1'
+        ? 'Sesi Anda berakhir karena akun ini baru saja login di perangkat atau browser lain.'
+        : null;
+    res.render('login', { error: errorMsg });
 });
-
-// ==================== AUTH ROUTES (UPDATE POST /login) ====================
 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -47,33 +48,69 @@ app.post('/login', async (req, res) => {
         if (rows.length === 0) {
             return res.render('login', { error: 'Email tidak ditemukan!' });
         }
+
         const user = rows[0];
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.render('login', { error: 'Password salah!' });
         }
 
-        req.session.user = {
-            id: user.id,
-            nama: user.nama,
-            email: user.email,
-            departemen: user.departemen,
-            role: user.role
-        };
+        // Regenerate session ID baru agar bersih & aman dari session fixation
+        req.session.regenerate(async (err) => {
+            if (err) {
+                console.error(err);
+                return res.render('login', { error: 'Gagal membuat sesi login.' });
+            }
 
-        // Flag untuk memicu SweetAlert SOP tepat setelah login berhasil
-        req.session.showSopAlert = true;
+            req.session.user = {
+                id: user.id,
+                nama: user.nama,
+                email: user.email,
+                departemen: user.departemen,
+                role: user.role
+            };
+            req.session.showSopAlert = true;
 
-        res.redirect('/dashboard');
+            // Simpan sessionID terbaru ke database (otomatis menggantikan sesi perangkat lama)
+            await db.query(
+                'UPDATE users SET active_session_id = ? WHERE id = ?',
+                [req.sessionID, user.id]
+            );
+
+            res.redirect('/dashboard');
+        });
     } catch (err) {
         console.error(err);
         res.render('login', { error: 'Terjadi kesalahan server.' });
     }
 });
 
+app.get('/logout', async (req, res) => {
+    try {
+        if (req.session && req.session.user) {
+            // Kosongkan active_session_id di database saat logout
+            await db.query(
+                'UPDATE users SET active_session_id = NULL WHERE id = ? AND active_session_id = ?',
+                [req.session.user.id, req.sessionID]
+            );
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        req.session.destroy(() => {
+            res.redirect('/login');
+        });
+    }
+});
+
+
+
+// Routes Registration (Optional, jika ingin menambahkan fitur registrasi user baru)
+
 app.get('/register', (req, res) => {
     res.render('register', { error: null });
 });
+
 
 app.post('/register', async (req, res) => {
     const { nama, email, password, departemen, role } = req.body;
@@ -92,10 +129,6 @@ app.post('/register', async (req, res) => {
     }
 });
 
-app.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/login');
-});
 
 
 // ==================== DASHBOARD ROUTES ====================
@@ -372,3 +405,46 @@ app.post('/users/create', isAuthenticated, isAdmin, async (req, res) => {
         res.status(500).send('Terjadi kesalahan saat membuat akun user baru.');
     }
 });
+
+
+// ==================== MIDDLEWARE AUTH & SINGLE SESSION ====================
+
+async function isAuthenticated(req, res, next) {
+    // 1. Cek apakah ada session user di browser
+    if (!req.session || !req.session.user) {
+        return res.redirect('/login');
+    }
+
+    try {
+        // 2. Cek kecocokan sessionID browser saat ini dengan active_session_id di database
+        const [rows] = await db.query(
+            'SELECT active_session_id FROM users WHERE id = ?',
+            [req.session.user.id]
+        );
+
+        // Jika user tidak ditemukan atau sessionID berbeda (artinya akun baru saja login di perangkat lain)
+        if (rows.length === 0 || rows[0].active_session_id !== req.sessionID) {
+            const isAjax = req.xhr || (req.headers.accept && req.headers.accept.includes('json'));
+            
+            req.session.destroy(() => {
+                // Jika request berasal dari AJAX auto-refresh (/api/dashboard-data), kirim status 401
+                if (isAjax) {
+                    return res.status(401).json({
+                        success: false,
+                        forceLogout: true,
+                        message: 'Akun Anda telah login di perangkat atau browser lain.'
+                    });
+                }
+                // Jika request halaman biasa, arahkan ke login dengan pesan peringatan
+                return res.redirect('/login?session_expired=1');
+            });
+            return;
+        }
+
+        // Session valid & hanya 1 sesi aktif
+        next();
+    } catch (err) {
+        console.error('Error pada single session middleware:', err);
+        res.status(500).send('Terjadi kesalahan validasi sesi.');
+    }
+}
