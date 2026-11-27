@@ -944,27 +944,59 @@
             }
         }
 
-            fetchDashboardData();
-            setInterval(fetchDashboardData, 5000);
+async function fetchDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard-data');
 
-            async function fetchDashboardData() {
-        try {
-            const response = await fetch('/api/dashboard-data');
+                // Jika sesi ditendang karena akun login di perangkat lain
+                if (response.status === 401) {
+                    window.location.href = '/login?session_expired=1';
+                    return;
+                }
 
-            // Jika sesi ditendang karena login di perangkat lain, langsung arahkan ke /login
-            if (response.status === 401) {
-                window.location.href = '/login?session_expired=1';
-                return;
+                const result = await response.json();
+                if (!result.success) return;
+
+                const { userRole, currentUserId } = result;
+                currentUserRole = userRole;
+
+                // Filter data: admin melihat semua, user biasa hanya melihat miliknya sendiri
+                const filteredTickets = userRole === 'admin'
+                    ? result.tickets
+                    : result.tickets.filter(t => Number(t.user_id) === Number(currentUserId));
+
+                const filteredAssets = userRole === 'admin'
+                    ? result.assets
+                    : result.assets.filter(a => Number(a.user_id) === Number(currentUserId));
+
+                allTickets = filteredTickets;
+                allAssets = filteredAssets;
+
+                const currentTicketsSnapshot = JSON.stringify(filteredTickets);
+                const currentAssetsSnapshot = JSON.stringify(filteredAssets);
+
+                if (currentTicketsSnapshot !== lastTicketsSnapshot || currentAssetsSnapshot !== lastAssetsSnapshot) {
+                    updateChartsAndKPI(filteredTickets, filteredAssets);
+                }
+
+                if (currentTicketsSnapshot !== lastTicketsSnapshot) {
+                    lastTicketsSnapshot = currentTicketsSnapshot;
+                    renderTicketsTable();
+                }
+
+                if (currentAssetsSnapshot !== lastAssetsSnapshot) {
+                    lastAssetsSnapshot = currentAssetsSnapshot;
+                    renderAssetsTable();
+                }
+
+            } catch (err) {
+                console.error('Gagal mengambil data AJAX:', err);
             }
-
-            const result = await response.json();
-            if (!result.success) return;
-
-            // ... (kode render grafik & tabel tetap sama) ...
-        } catch (err) {
-            console.error('Gagal mengambil data AJAX:', err);
         }
-    }
+
+        // Jalankan pertama kali saat halaman dibuka & ulangi setiap 5 detik
+        fetchDashboardData();
+        setInterval(fetchDashboardData, 5000);
     </script>
 
     <!-- ==================== SWEETALERT2 SOP PENGGUNAAN LAPTOP ==================== -->
